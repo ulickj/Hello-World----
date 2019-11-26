@@ -1,0 +1,180 @@
+#!/usr/bin/python
+import PySimpleGUI as sg
+import os
+import pysftp
+import paramiko
+import difflib
+
+global hostname
+
+myUsername = "root"
+myPassword = "password"
+port = 22
+
+
+homefolder = os.path.expanduser('~')
+#print(homefolder)
+#dirName = homefolder + '/Documents/' + hostname + '/pre'
+#dirName_upload = "C:/Users/cgs-ujainakov/PycharmProjects/test.txt"
+
+def host_status():
+    # All the stuff inside your window.
+    layout = [[sg.Text('Enter Upgarded ACU IP below')],
+              [sg.Text('ACU IP address'), sg.InputText()],
+              [sg.Button('Ok'), sg.Button('Cancel')]]
+
+    # Create the Window
+    window = sg.Window('ACU Upgrade', layout)
+    # Event Loop to process "events" and get the "values" of the inputs
+    while True:
+        event, values = window.read()
+        if event in (None, 'Cancel'):  # if user closes window or clicks cancel
+            break
+        # print('You entered ', values[0])
+        else:
+
+            hostname = (values[0])
+            response = os.system("ping " + hostname)
+
+            if response == 0:
+                sg.Popup('ACU connected- Please Press OK to proceed to collect Post upgrade logs!')
+                print('ACU connected !')
+                # print (hostname)
+
+            else:
+                sg.Popup('ACU NOT connected')
+                print('ACU NOT connected!')
+                break
+            return hostname
+    window.close()
+
+
+hostname = host_status()
+print(hostname)
+
+
+def version():
+    cmd = 'strk -v'
+
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(hostname, port, username=myUsername, password=myPassword)
+
+    stdin, stdout, stderr = ssh.exec_command(cmd)
+    outlines = stdout.readlines()
+    resp = ''.join(outlines)
+    sg.text = resp
+
+    # All the stuff inside your window.
+    layout = [[sg.Text(
+        'Check ACU Software and Press OK to proceed with Download')],
+        [sg.Text(resp)],
+        [sg.Button('Ok'), sg.Button('Cancel')]]
+
+    # Create the Window
+    window = sg.Window('ACU version', layout)
+    # Event Loop to process "events" and get the "values" of the inputs
+    while True:
+        event, values = window.read()
+        if event in (None, 'Cancel'):  # if user closes window or clicks cancel
+            quit()
+            # print(event)
+        else:
+            print(resp)
+            break
+
+
+version()
+
+
+def download():
+    myHostname = hostname
+    dirName = homefolder + '/Documents/' + myHostname + '/post/'
+    cnopts = pysftp.CnOpts()
+    cnopts.hostkeys = None
+
+    with pysftp.Connection(host=myHostname, username=myUsername, password=myPassword, cnopts=cnopts) as sftp:
+        print("Connection succesfully established ... ")
+
+        # Define the directory that you want to download from the ACU
+        remoteFilePath = "/usr/local/etc/"
+
+        #dirName = 'C:/Users/cgs-ujainakov/PycharmProjects/' + myHostname + '/post'
+        print(dirName)
+
+        try:
+            os.makedirs(dirName)
+            print("Directory ", dirName, " Created ")
+        except FileExistsError:
+            print("Directory ", dirName, " already exists")
+
+        # print(remoteFilePath)
+
+        # Define the local path where the file will be saved
+        localFilePath = dirName
+        # print(localFilePath)
+
+        sftp.get_d(remoteFilePath, localFilePath)
+
+        sg.Popup('Files under /usr/local/etc Successfully Downloaded - CLICK OK to Download files under /root/etc')
+        # print('ACU connected !')
+        # print (hostname)
+
+
+download()
+
+
+def download1():
+    myHostname = hostname
+    dirName = homefolder + '/Documents/' + myHostname + '/post'
+
+    cnopts = pysftp.CnOpts()
+    cnopts.hostkeys = None
+
+    with pysftp.Connection(host=myHostname, username=myUsername, password=myPassword, cnopts=cnopts) as sftp:
+        print("Connection succesfully established ... ")
+
+        # Define the directory that you want to download from the ACU
+        remoteFilePath = "/etc/"
+
+        #dirName = 'C:/Users/cgs-ujainakov/PycharmProjects/' + myHostname + '/post'
+        print(dirName)
+
+        # print(remoteFilePath)
+
+        # Define the local path where the file will be saved
+        localFilePath = dirName
+        # print(localFilePath)
+
+        sftp.get_d(remoteFilePath, localFilePath)
+        sg.Popup('Files under /root/etc Successfully Downloaded - Click OK to Quit')
+        # print('ACU connected !')
+        # print (hostname)
+
+
+download1()
+
+
+def compare1():
+    myHostname = hostname
+    dirName1 = homefolder + '/Documents/' + myHostname + '/pre/'
+    dirName2 = homefolder + '/Documents/' + myHostname + '/post/'
+
+    files = ['hosts', 'ntp.conf', 'rc.local', 'host.conf', 'gpspresets.txt', 'resolv.conf', 'strk.cfg']
+
+    for i in files:
+        file1 = open(dirName1 + i, 'r')
+        file2 = open(dirName2 + i, 'r')
+        # print(file1)
+        # print(file2)
+        diff = difflib.ndiff(file1.readlines(), file2.readlines())
+        delta = ''.join(x[2:] for x in diff if x.startswith('- '))
+        if len(delta) > 1:
+            print('file that has delta PRE vs POST is ' + i + '\n' + delta)
+            # print (hostname)
+
+        else:
+            print(delta + 'IDENTICAL files ' + i)
+
+compare1()
+quit()
