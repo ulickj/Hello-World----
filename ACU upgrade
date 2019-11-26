@@ -1,18 +1,24 @@
+#!/usr/bin/python
+import os
 import PySimpleGUI as sg
 import os
 import pysftp
 import paramiko
 
 global hostname
-
+global homefolder
 
 myUsername = "root"
 myPassword = "password"
 port = 22
+homefolder = os.path.expanduser('~')
+#print(homefolder)
+#dirName = homefolder + '/Documents/' + hostname + '/pre'
+dirName_upload = "C:/Users/cgs-ujainakov/PycharmProjects/test.txt"
 
 
 def host_status():
-# All the stuff inside your window.
+    # All the stuff inside your window.
     layout = [[sg.Text('Enter ACU IP below')],
               [sg.Text('ACU IP address'), sg.InputText()],
               [sg.Button('Ok'), sg.Button('Cancel')]]
@@ -33,7 +39,7 @@ def host_status():
             if response == 0:
                 sg.Popup('ACU connected- Please Press OK to continue!')
                 print('ACU connected !')
-                #print (hostname)
+                # print (hostname)
 
             else:
                 sg.Popup('ACU NOT connected')
@@ -43,9 +49,8 @@ def host_status():
     window.close()
 
 
-hostname =host_status()
+hostname = host_status()
 print(hostname)
-
 
 
 def version():
@@ -63,8 +68,8 @@ def version():
     # All the stuff inside your window.
     layout = [[sg.Text(
         'If  ACU version is differ than target version Press OK to procced with upgrade otherwise Press Cancel')],
-              [sg.Text(resp)],
-              [sg.Button('Ok'), sg.Button('Cancel')]]
+        [sg.Text(resp)],
+        [sg.Button('Ok'), sg.Button('Cancel')]]
 
     # Create the Window
     window = sg.Window('ACU version', layout)
@@ -78,12 +83,13 @@ def version():
             print(resp)
             break
 
-version()
 
+version()
 
 
 def download():
     myHostname = hostname
+    dirName = homefolder + '/Documents/' + myHostname + '/pre'
 
     cnopts = pysftp.CnOpts()
     cnopts.hostkeys = None
@@ -94,7 +100,7 @@ def download():
         # Define the directory that you want to download from the ACU
         remoteFilePath = "/usr/local/etc/"
 
-        dirName = 'C:/Users/cgs-ujainakov/PycharmProjects/' + myHostname
+        #dirName = homefolder + '/Documents/' + myHostname + '/pre'
         print(dirName)
 
         try:
@@ -106,19 +112,22 @@ def download():
         # print(remoteFilePath)
 
         # Define the local path where the file will be saved
-        localFilePath = "C:/Users/cgs-ujainakov/PycharmProjects/" + myHostname + '/'
+        localFilePath = dirName
         # print(localFilePath)
 
         sftp.get_d(remoteFilePath, localFilePath)
 
         sg.Popup('Files under /usr/local/etc Successfully Downloaded - CLICK OK to Download files under /root/etc')
-        #print('ACU connected !')
-            # print (hostname)
+        # print('ACU connected !')
+        # print (hostname)
+
 
 download()
 
+
 def download1():
     myHostname = hostname
+    dirName = homefolder + '/Documents/' + myHostname + '/pre'
 
     cnopts = pysftp.CnOpts()
     cnopts.hostkeys = None
@@ -129,21 +138,23 @@ def download1():
         # Define the directory that you want to download from the ACU
         remoteFilePath = "/etc/"
 
-        dirName = 'C:/Users/cgs-ujainakov/PycharmProjects/' + myHostname
-        print(dirName)
+        #dirName = homefolder + '/Documents/' + myHostname + '/pre'
+        #print(dirName)
 
         # print(remoteFilePath)
 
         # Define the local path where the file will be saved
-        localFilePath = "C:/Users/cgs-ujainakov/PycharmProjects/" + myHostname + '/'
+        localFilePath = dirName
         # print(localFilePath)
 
         sftp.get_d(remoteFilePath, localFilePath)
         sg.Popup('Files under /root/etc Successfully Downloaded - CLICK OK to UPLOAD upgrade package')
-        #print('ACU connected !')
-            # print (hostname)
+        # print('ACU connected !')
+        # print (hostname)
+
 
 download1()
+
 
 def upload():
     myHostname = hostname
@@ -157,22 +168,25 @@ def upload():
         # Define the directory that you want to download from the ACU
         # remoteFilePath = "/usr/local/etc/"
         remoteFilePath = "/tmp/test.txt"
+        #remoteFilePath = "/home/acu/update"
         print(remoteFilePath)
 
         # Define the local path where the file will be saved
         # localFilePath = "C:/Users/cgs-ujainakov/PycharmProjects/"
-        localFilePath = "C:/Users/cgs-ujainakov/PycharmProjects/test.txt"
+        localFilePath = dirName_upload
         print(localFilePath)
 
         # sftp.get_d(remoteFilePath, localFilePath)
         sftp.put(localFilePath, remoteFilePath)
         sg.Popup('ACU Software Successfully Uploaded ')
 
+
 upload()
 
 
 def command():
     cmd = 'ls'
+    #cmd = 'acu-update'
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -186,8 +200,8 @@ def command():
     # All the stuff inside your window.
     layout = [[sg.Text(
         'acu-update')],
-              [sg.Text(resp)],
-              [sg.Button('Ok'), sg.Button('Cancel')]]
+        [sg.Text(resp)],
+        [sg.Button('Ok'), sg.Button('Cancel')]]
 
     # Create the Window
     window = sg.Window('ACU Upgrade', layout)
@@ -201,6 +215,15 @@ def command():
             print(resp)
             break
 
+
+
+    # cmd = 'reboot'
+    # stdin, stdout, stderr = ssh.exec_command(cmd)
+    # outlines = stdout.readlines()
+    # resp1 = ''.join(outlines)
+    # sg.text = resp1
+
 command()
 
+quit()
 # and ssh again and reboot
